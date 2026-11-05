@@ -239,8 +239,8 @@ public class AudioBridgePlugin: CAPPlugin, CAPBridgedPlugin {
         }
 
         // 3. Toggle Play/Pause (AirPods single-click)
-        commandCenter.togglePlayPauseMusicCommand.isEnabled = true
-        commandCenter.togglePlayPauseMusicCommand.addTarget { [weak self] _ in
+        commandCenter.togglePlayPauseCommand.isEnabled = true
+        commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
             self?.notifyListeners("remoteCommand", data: ["command": "togglePlayPause"])
             return .success
         }
