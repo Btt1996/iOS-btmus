@@ -30,16 +30,33 @@ jobs:
 
       - name: Build iOS archive
         run: |
-          xcodebuild \
-            -workspace ios/App/App.xcworkspace \
-            -scheme App \
-            -configuration Release \
-            -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -archivePath $RUNNER_TEMP/BttMusic.xcarchive \
-            archive \
-            CODE_SIGNING_ALLOWED=NO
-
+          if [ -d "ios/App/App.xcworkspace" ]; then
+            echo "Using Xcode workspace"
+            xcodebuild \
+              -workspace ios/App/App.xcworkspace \
+              -scheme App \
+              -configuration Release \
+              -sdk iphoneos \
+              -destination 'generic/platform=iOS' \
+              -archivePath "$RUNNER_TEMP/BttMusic.xcarchive" \
+              archive \
+              CODE_SIGNING_ALLOWED=NO
+          elif [ -d "ios/App/App.xcodeproj" ]; then
+            echo "Using Xcode project (Swift Package Manager)"
+            xcodebuild \
+              -project ios/App/App.xcodeproj \
+              -scheme App \
+              -configuration Release \
+              -sdk iphoneos \
+              -destination 'generic/platform=iOS' \
+              -archivePath "$RUNNER_TEMP/BttMusic.xcarchive" \
+              archive \
+              CODE_SIGNING_ALLOWED=NO
+          else
+            echo "ERROR: No Xcode workspace or project found"
+            find ios -maxdepth 4 -type d
+            exit 1
+          fi
       - name: Package IPA
         run: |
           mkdir -p $RUNNER_TEMP/Payload
