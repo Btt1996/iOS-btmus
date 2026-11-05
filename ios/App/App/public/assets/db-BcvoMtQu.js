@@ -53,10 +53,24 @@ function getDB() {
 			if (!db.objectStoreNames.contains("trackAnalysis")) db.createObjectStore("trackAnalysis", { keyPath: "trackId" }).createIndex("analyzedAt", "analyzedAt", { unique: false });
 		};
 		request.onsuccess = () => {
-			resolve(request.result);
+			const db = request.result;
+			db.onclose = () => {
+				dbPromise = null;
+			};
+			db.onversionchange = () => {
+				try {
+					db.close();
+				} catch {}
+				dbPromise = null;
+			};
+			resolve(db);
 		};
 		request.onerror = () => {
+			dbPromise = null;
 			reject(request.error || /* @__PURE__ */ new Error("Failed to open IndexedDB"));
+		};
+		request.onblocked = () => {
+			dbPromise = null;
 		};
 	});
 	return dbPromise;

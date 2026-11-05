@@ -171,6 +171,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Pre-cached ObjectURLs for instantaneous lock-screen AirPod next/previous track switching
   const preloadedUrlsRef = useRef<Map<string, string>>(new Map());
 
+  // iOS Native Interruption & Throttled Sync State
+  const wasPlayingBeforeInterruptionRef = useRef(false);
+  const lastNativePositionSyncRef = useRef<number>(0);
+
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -368,16 +372,22 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const setupNativeListeners = async () => {
         try {
           const remoteSub = await AudioBridge.addListener('remoteCommand', (event) => {
+            const activeDeck = activeDeckRef.current === 'A' ? deckARef.current : deckBRef.current;
             switch (event.command) {
               case 'play': {
-                const activeDeck = activeDeckRef.current === 'A' ? deckA : deckB;
-                if (activeDeck && activeDeck.paused) {
-                  activeDeck.play().catch(console.warn);
+                if (playerStateRef.current.currentTrack && activeDeck && activeDeck.src) {
+                  if (activeDeck.paused) {
+                    activeDeck.play().catch(console.warn);
+                  }
+                } else if (playerStateRef.current.queue.length > 0) {
+                  const idx = playerStateRef.current.queueIndex >= 0 ? playerStateRef.current.queueIndex : 0;
+                  playTrackRef.current(playerStateRef.current.queue[idx], playerStateRef.current.queue);
+                } else if (tracks.length > 0) {
+                  playTrackRef.current(tracks[0], tracks);
                 }
                 break;
               }
               case 'pause': {
-                const activeDeck = activeDeckRef.current === 'A' ? deckA : deckB;
                 activeDeck?.pause();
                 break;
               }
@@ -403,18 +413,22 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           });
 
           const interruptionSub = await AudioBridge.addListener('audioInterruption', (event) => {
-            const activeDeck = activeDeckRef.current === 'A' ? deckA : deckB;
+            const activeDeck = activeDeckRef.current === 'A' ? deckARef.current : deckBRef.current;
             if (event.type === 'began') {
+              wasPlayingBeforeInterruptionRef.current = !!playerStateRef.current.isPlaying;
               activeDeck?.pause();
-            } else if (event.type === 'ended' && event.shouldResume) {
-              activeDeck?.play().catch(console.warn);
+            } else if (event.type === 'ended') {
+              if (wasPlayingBeforeInterruptionRef.current && event.shouldResume) {
+                activeDeck?.play().catch(console.warn);
+              }
+              wasPlayingBeforeInterruptionRef.current = false;
             }
           });
 
           const routeSub = await AudioBridge.addListener('routeChange', (event) => {
             if (event.reason === 'oldDeviceUnavailable') {
               // AirPods disconnected: pause playback gracefully
-              const activeDeck = activeDeckRef.current === 'A' ? deckA : deckB;
+              const activeDeck = activeDeckRef.current === 'A' ? deckARef.current : deckBRef.current;
               activeDeck?.pause();
             }
           });
@@ -546,7 +560,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
-  const updateMediaSessionPosition = (audio: HTMLAudioElement) => {
+  const updateMediaSessionPosition = (audio: HTMLAudioElement, forceNative = false) => {
     if ('mediaSession' in navigator && navigator.mediaSession.setPositionState) {
       if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration) && audio.duration > 0) {
         try {
@@ -562,10 +576,16 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     if (isNativePlatform) {
-      AudioBridge.updatePlaybackState({
-        currentTime: audio.currentTime,
-        playbackRate: audio.paused ? 0.0 : (audio.playbackRate || 1.0),
-      }).catch(() => {});
+      const now = Date.now();
+      // Only sync native iOS playback state on demand (seek/play/pause/track transition) or infrequently (every 15s)
+      // This eliminates 4Hz IPC chatter and lock-screen scrubber jitter
+      if (forceNative || now - lastNativePositionSyncRef.current > 15000) {
+        lastNativePositionSyncRef.current = now;
+        AudioBridge.updatePlaybackState({
+          currentTime: audio.currentTime,
+          playbackRate: audio.paused ? 0.0 : (audio.playbackRate || 1.0),
+        }).catch(() => {});
+      }
     }
   };
 
@@ -997,7 +1017,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         currentTime: clamped,
         isSmartMixBlending: false,
       }));
-      updateMediaSessionPosition(activeDeck);
+      updateMediaSessionPosition(activeDeck, true);
     }
   }, []);
 

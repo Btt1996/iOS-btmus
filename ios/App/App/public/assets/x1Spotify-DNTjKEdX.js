@@ -1,3 +1,4 @@
+import { v as isNativePlatform } from "./x2Engine-Cmqm_qoc.js";
 // src/services/playlistImport/x1Spotify.ts
 /**
 * Extracts Spotify target (type and ID) from various URL and URI forms:
@@ -46,7 +47,7 @@ function parseSpotifyPlaylistId(input) {
 async function fetchSpotifyPlaylist(playlistUrlOrId, config) {
 	const target = parseSpotifyTarget(playlistUrlOrId);
 	if (!target) throw new Error("Invalid Spotify link. Please paste a valid Spotify playlist or album URL (e.g. https://open.spotify.com/playlist/...)");
-	try {
+	if (!isNativePlatform) try {
 		const res = await fetch(`/api/spotify/playlist?id=${encodeURIComponent(target.id)}`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },

@@ -1,9 +1,9 @@
 import { a as __toESM } from "./rolldown-runtime-DQp2zzRu.js";
 import { $ as History, A as Send, Dt as require_react, G as Lock, H as Music, I as Radio, J as ListMusic, K as LoaderCircle, M as RotateCcw, R as Play, X as Layers, _ as Sparkles, bt as Check, d as Trash2, ft as Clock, gt as CircleAlert, it as FileMusic, j as Search, mt as CircleCheck, r as X, st as Download, u as TriangleAlert, ut as Copy, w as ShieldCheck, wt as ArrowRight } from "./vendor-icons-DVdP9XFB.js";
-import { g as savePlaylist, h as isTrackInLibrary, s as findVerifiedCachedTrack, v as saveTrack } from "./db-Cr6tU0Tr.js";
-import { _ as useMusic, a as searchAllX2Providers, c as getAllHistory, h as parseAudioMetadata, l as recordDownloadHistory, m as formatFileSize, o as clearHistoryByType, p as formatDuration, r as resolveAndDownloadSingleTrack, s as deleteHistoryRecord, u as recordPlaylistHistory } from "./x2Engine-BSzGwD2O.js";
+import { g as savePlaylist, h as isTrackInLibrary, s as findVerifiedCachedTrack, v as saveTrack } from "./db-BcvoMtQu.js";
+import { _ as useMusic, a as searchAllX2Providers, c as getAllHistory, h as parseAudioMetadata, l as recordDownloadHistory, m as formatFileSize, o as clearHistoryByType, p as formatDuration, r as resolveAndDownloadSingleTrack, s as deleteHistoryRecord, u as recordPlaylistHistory, v as isNativePlatform } from "./x2Engine-Cmqm_qoc.js";
 import { l as require_jsx_runtime } from "./vendor-motion-CvHAzLEi.js";
-import { t as fetchSpotifyPlaylist } from "./x1Spotify-BF31KyoX.js";
+import { t as fetchSpotifyPlaylist } from "./x1Spotify-DNTjKEdX.js";
 // src/types/playlistImport.ts
 var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
 var DEFAULT_IMPORT_SETTINGS = {
@@ -772,7 +772,7 @@ var SpotifyPlaylistReviewModal = ({ isOpen, onClose, initialUrl = "", initialPla
 async function verifyTelegramBot(botToken) {
 	const cleanToken = botToken.trim();
 	if (!cleanToken) throw new Error("Please enter a valid Telegram Bot Token.");
-	try {
+	if (!isNativePlatform) try {
 		const proxyUrl = `/api/telegram/verify?token=${encodeURIComponent(cleanToken)}`;
 		const res = await fetch(proxyUrl);
 		if (res.ok) {
@@ -797,7 +797,7 @@ async function verifyTelegramBot(botToken) {
 async function fetchTelegramAudioTracks(botToken) {
 	const cleanToken = botToken.trim();
 	let updates = [];
-	try {
+	if (!isNativePlatform) try {
 		const proxyUrl = `/api/telegram/updates?token=${encodeURIComponent(cleanToken)}&limit=100`;
 		const res = await fetch(proxyUrl);
 		if (res.ok) {
@@ -805,7 +805,8 @@ async function fetchTelegramAudioTracks(botToken) {
 			if (data.ok) updates = data.result || [];
 			else throw new Error(data.description || "Failed to fetch updates from Telegram");
 		} else throw new Error(`Proxy responded with status ${res.status}`);
-	} catch {
+	} catch {}
+	if (updates.length === 0) {
 		const directUrl = `https://api.telegram.org/bot${cleanToken}/getUpdates?limit=100&allowed_updates=["message","channel_post"]`;
 		const data = await (await fetch(directUrl)).json();
 		if (!data.ok) throw new Error(data.description || "Failed to fetch updates from Telegram");
@@ -864,7 +865,7 @@ async function fetchTelegramAudioTracks(botToken) {
 async function downloadTelegramAudio(botToken, item, onProgress) {
 	const cleanToken = botToken.trim();
 	let filePath = "";
-	try {
+	if (!isNativePlatform) try {
 		const proxyInfoUrl = `/api/telegram/file-info?token=${encodeURIComponent(cleanToken)}&file_id=${encodeURIComponent(item.fileId)}`;
 		const infoRes = await fetch(proxyInfoUrl);
 		if (infoRes.ok) {
@@ -881,12 +882,15 @@ async function downloadTelegramAudio(botToken, item, onProgress) {
 		if (!infoData.ok || !infoData.result?.file_path) throw new Error(infoData.description || "Could not retrieve Telegram file path from Telegram.");
 		filePath = infoData.result.file_path;
 	}
-	let res;
-	const proxyDownloadUrl = `/api/telegram/download?token=${encodeURIComponent(cleanToken)}&file_path=${encodeURIComponent(filePath)}`;
-	try {
-		res = await fetch(proxyDownloadUrl);
-		if (!res.ok) throw new Error(`Proxy error ${res.status}`);
-	} catch {
+	let res = null;
+	if (!isNativePlatform) {
+		const proxyDownloadUrl = `/api/telegram/download?token=${encodeURIComponent(cleanToken)}&file_path=${encodeURIComponent(filePath)}`;
+		try {
+			const proxyRes = await fetch(proxyDownloadUrl);
+			if (proxyRes.ok) res = proxyRes;
+		} catch {}
+	}
+	if (!res) {
 		const directDownloadUrl = `https://api.telegram.org/file/bot${cleanToken}/${filePath}`;
 		res = await fetch(directDownloadUrl);
 	}

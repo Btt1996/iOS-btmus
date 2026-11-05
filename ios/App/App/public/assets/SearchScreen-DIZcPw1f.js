@@ -1,10 +1,10 @@
 import { a as __toESM } from "./rolldown-runtime-DQp2zzRu.js";
 import { $ as History, A as Send, B as Pause, Dt as require_react, H as Music, J as ListMusic, K as LoaderCircle, L as Plus, R as Play, X as Layers, Y as Library, _ as Sparkles, at as ExternalLink, bt as Check, ct as Disc, gt as CircleAlert, j as Search, n as Youtube, ot as EllipsisVertical, r as X, st as Download, vt as ChevronRight } from "./vendor-icons-DVdP9XFB.js";
-import { s as findVerifiedCachedTrack, u as getAllTracks } from "./db-Cr6tU0Tr.js";
-import { _ as useMusic, d as recordSearchHistory, p as formatDuration, r as resolveAndDownloadSingleTrack } from "./x2Engine-BSzGwD2O.js";
+import { s as findVerifiedCachedTrack, u as getAllTracks } from "./db-BcvoMtQu.js";
+import { _ as useMusic, d as recordSearchHistory, p as formatDuration, r as resolveAndDownloadSingleTrack } from "./x2Engine-Cmqm_qoc.js";
 import { l as require_jsx_runtime } from "./vendor-motion-CvHAzLEi.js";
-import { t as fetchSpotifyPlaylist } from "./x1Spotify-BF31KyoX.js";
-import { a as SpotifyPlaylistReviewModal, o as MusicHistoryModal, s as DEFAULT_IMPORT_SETTINGS, t as TelegramDiscoveryModal } from "./TelegramDiscoveryModal-BdEIXZog.js";
+import { t as fetchSpotifyPlaylist } from "./x1Spotify-DNTjKEdX.js";
+import { a as SpotifyPlaylistReviewModal, o as MusicHistoryModal, s as DEFAULT_IMPORT_SETTINGS, t as TelegramDiscoveryModal } from "./TelegramDiscoveryModal-CMX1QQ0P.js";
 // src/services/musicSearch/youtubeSearchService.ts
 var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
 /**

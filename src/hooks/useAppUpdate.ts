@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { APP_VERSION } from '../constants/version';
+import { isNativePlatform } from '../services/nativeAudioBridge';
 
 export type UpdateCheckStatus =
   | 'idle'
@@ -86,13 +87,15 @@ export function useAppUpdate() {
       }
 
       // 2. Fetch fresh published version manifest (cache-busted)
-      const res = await fetch(`/api/version?t=${Date.now()}`, {
-        cache: 'no-store',
-        headers: { Accept: 'application/json' },
-      }).catch(async () => {
-        // Fallback to static version.json
-        return await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store' });
-      });
+      const res = isNativePlatform
+        ? await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store' })
+        : await fetch(`/api/version?t=${Date.now()}`, {
+            cache: 'no-store',
+            headers: { Accept: 'application/json' },
+          }).catch(async () => {
+            // Fallback to static version.json
+            return await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store' });
+          });
 
       if (!res.ok) {
         throw new Error(`Server returned HTTP ${res.status}`);

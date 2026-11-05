@@ -55,11 +55,28 @@ export function getDB(): Promise<IDBDatabase> {
     };
 
     request.onsuccess = () => {
-      resolve(request.result);
+      const db = request.result;
+      db.onclose = () => {
+        dbPromise = null;
+      };
+      db.onversionchange = () => {
+        try {
+          db.close();
+        } catch {
+          // ignore
+        }
+        dbPromise = null;
+      };
+      resolve(db);
     };
 
     request.onerror = () => {
+      dbPromise = null;
       reject(request.error || new Error('Failed to open IndexedDB'));
+    };
+
+    request.onblocked = () => {
+      dbPromise = null;
     };
   });
 

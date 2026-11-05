@@ -1,10 +1,10 @@
 import { a as __toESM } from "./rolldown-runtime-DQp2zzRu.js";
 import { C as Shield, D as Share2, Dt as require_react, E as Share, Et as Activity, F as RefreshCw, K as LoaderCircle, V as Palette, _ as Sparkles, bt as Check, c as Volume1, ft as Clock, h as SquarePlus, ht as CircleArrowUp, k as Server, l as Upload, mt as CircleCheck, o as VolumeX, r as X, s as Volume2, st as Download, t as Zap, tt as HardDrive, u as TriangleAlert, ut as Copy, v as Smartphone, xt as ChartColumn } from "./vendor-icons-DVdP9XFB.js";
-import { d as getAudioBlob, m as importLibraryBackup, o as exportLibraryBackup, t as clearAllData } from "./db-Cr6tU0Tr.js";
-import { _ as useMusic, m as formatFileSize } from "./x2Engine-BSzGwD2O.js";
+import { d as getAudioBlob, m as importLibraryBackup, o as exportLibraryBackup, t as clearAllData } from "./db-BcvoMtQu.js";
+import { _ as useMusic, m as formatFileSize, v as isNativePlatform } from "./x2Engine-Cmqm_qoc.js";
 import { l as require_jsx_runtime } from "./vendor-motion-CvHAzLEi.js";
-import { n as SpotDLInfoModal, t as X2BenchmarkModal } from "./X2BenchmarkModal-bDWlfQ7R.js";
-import { n as ConfirmModal, r as findDuplicateTracks, s as useOnlineStatus, t as DuplicatesModal } from "./index-DMa-3grU.js";
+import { n as SpotDLInfoModal, t as X2BenchmarkModal } from "./X2BenchmarkModal-CBO1aBlH.js";
+import { n as ConfirmModal, r as findDuplicateTracks, s as useOnlineStatus, t as DuplicatesModal } from "./index-CJv9sq5x.js";
 // src/hooks/usePWAInstall.ts
 var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
 function usePWAInstall() {
@@ -251,7 +251,7 @@ function useAppUpdate() {
 		}));
 		try {
 			if (swRegistration) swRegistration.update().catch(console.warn);
-			const res = await fetch(`/api/version?t=${Date.now()}`, {
+			const res = isNativePlatform ? await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" }) : await fetch(`/api/version?t=${Date.now()}`, {
 				cache: "no-store",
 				headers: { Accept: "application/json" }
 			}).catch(async () => {

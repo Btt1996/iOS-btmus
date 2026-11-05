@@ -1,4 +1,5 @@
 import { NormalizedPlaylist, NormalizedTrackMetadata } from '../../types/playlistImport';
+import { isNativePlatform } from '../nativeAudioBridge';
 
 export interface SpotifyConfig {
   clientId?: string;
@@ -73,39 +74,41 @@ export async function fetchSpotifyPlaylist(
     );
   }
 
-  // Primary: Call the local server endpoint which runs the keyless embed resolver
-  try {
-    const res = await fetch(`/api/spotify/playlist?id=${encodeURIComponent(target.id)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        url: playlistUrlOrId,
-        id: target.id,
-        clientId: config?.clientId?.trim() || undefined,
-        clientSecret: config?.clientSecret?.trim() || undefined,
-      }),
-    });
+  // Primary: Call the local server endpoint which runs the keyless embed resolver in web mode
+  if (!isNativePlatform) {
+    try {
+      const res = await fetch(`/api/spotify/playlist?id=${encodeURIComponent(target.id)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: playlistUrlOrId,
+          id: target.id,
+          clientId: config?.clientId?.trim() || undefined,
+          clientSecret: config?.clientSecret?.trim() || undefined,
+        }),
+      });
 
-    const data = await res.json().catch(() => ({}));
+      const data = await res.json().catch(() => ({}));
 
-    if (res.ok && data.tracks && Array.isArray(data.tracks) && data.tracks.length > 0) {
-      return {
-        source: 'spotify',
-        playlistTitle: data.playlistTitle || 'Spotify Playlist',
-        playlistDescription: data.playlistDescription || '',
-        playlistCoverUrl: data.playlistCoverUrl || undefined,
-        externalUrl: data.externalUrl || `https://open.spotify.com/${target.type}/${target.id}`,
-        totalTracks: data.totalTracks || data.tracks.length,
-        tracks: data.tracks,
-      };
-    }
+      if (res.ok && data.tracks && Array.isArray(data.tracks) && data.tracks.length > 0) {
+        return {
+          source: 'spotify',
+          playlistTitle: data.playlistTitle || 'Spotify Playlist',
+          playlistDescription: data.playlistDescription || '',
+          playlistCoverUrl: data.playlistCoverUrl || undefined,
+          externalUrl: data.externalUrl || `https://open.spotify.com/${target.type}/${target.id}`,
+          totalTracks: data.totalTracks || data.tracks.length,
+          tracks: data.tracks,
+        };
+      }
 
-    if (data.details || data.error) {
-      throw new Error(data.details || data.error);
-    }
-  } catch (err: unknown) {
-    if (err instanceof Error && !err.message.includes('Failed to fetch')) {
-      throw err;
+      if (data.details || data.error) {
+        throw new Error(data.details || data.error);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && !err.message.includes('Failed to fetch')) {
+        throw err;
+      }
     }
   }
 

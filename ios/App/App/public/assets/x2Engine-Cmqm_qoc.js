@@ -1,7 +1,7 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/web-Bvju295W.js","assets/definitions-dS0bAjGV.js","assets/db-Cr6tU0Tr.js","assets/rolldown-runtime-DQp2zzRu.js"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/web-Bvju295W.js","assets/definitions-dS0bAjGV.js","assets/db-BcvoMtQu.js","assets/rolldown-runtime-DQp2zzRu.js"])))=>i.map(i=>d[i]);
 import { a as __toESM } from "./rolldown-runtime-DQp2zzRu.js";
 import { Dt as require_react } from "./vendor-icons-DVdP9XFB.js";
-import { _ as saveSetting, a as deleteTracks, b as updateTrackMetadata, c as getAllPlaylists, d as getAudioBlob, f as getSetting, g as savePlaylist, i as deleteTrack, l as getAllTrackAnalyses, p as getStorageEstimate, r as deletePlaylist, s as findVerifiedCachedTrack, u as getAllTracks, v as saveTrack, y as saveTrackAnalysis } from "./db-Cr6tU0Tr.js";
+import { _ as saveSetting, a as deleteTracks, b as updateTrackMetadata, c as getAllPlaylists, d as getAudioBlob, f as getSetting, g as savePlaylist, i as deleteTrack, l as getAllTrackAnalyses, p as getStorageEstimate, r as deletePlaylist, s as findVerifiedCachedTrack, u as getAllTracks, v as saveTrack, y as saveTrackAnalysis } from "./db-BcvoMtQu.js";
 import { a as registerPlugin, r as Capacitor, t as ImpactStyle } from "./definitions-dS0bAjGV.js";
 import { l as require_jsx_runtime } from "./vendor-motion-CvHAzLEi.js";
 // src/services/audioAnalysis.ts
@@ -544,6 +544,8 @@ var MusicProvider = ({ children }) => {
 	(0, import_react.useRef)(null);
 	(0, import_react.useRef)(false);
 	const preloadedUrlsRef = (0, import_react.useRef)(/* @__PURE__ */ new Map());
+	const wasPlayingBeforeInterruptionRef = (0, import_react.useRef)(false);
+	const lastNativePositionSyncRef = (0, import_react.useRef)(0);
 	const showToast = (0, import_react.useCallback)((msg) => {
 		setToastMessage(msg);
 		setTimeout(() => {
@@ -692,14 +694,18 @@ var MusicProvider = ({ children }) => {
 			const setupNativeListeners = async () => {
 				try {
 					const remoteSub = await AudioBridge.addListener("remoteCommand", (event) => {
+						const activeDeck = activeDeckRef.current === "A" ? deckARef.current : deckBRef.current;
 						switch (event.command) {
-							case "play": {
-								const activeDeck = activeDeckRef.current === "A" ? deckA : deckB;
-								if (activeDeck && activeDeck.paused) activeDeck.play().catch(console.warn);
+							case "play":
+								if (playerStateRef.current.currentTrack && activeDeck && activeDeck.src) {
+									if (activeDeck.paused) activeDeck.play().catch(console.warn);
+								} else if (playerStateRef.current.queue.length > 0) {
+									const idx = playerStateRef.current.queueIndex >= 0 ? playerStateRef.current.queueIndex : 0;
+									playTrackRef.current(playerStateRef.current.queue[idx], playerStateRef.current.queue);
+								} else if (tracks.length > 0) playTrackRef.current(tracks[0], tracks);
 								break;
-							}
 							case "pause":
-								(activeDeckRef.current === "A" ? deckA : deckB)?.pause();
+								activeDeck?.pause();
 								break;
 							case "togglePlayPause":
 								togglePlayPauseRef.current();
@@ -714,12 +720,17 @@ var MusicProvider = ({ children }) => {
 						}
 					});
 					const interruptionSub = await AudioBridge.addListener("audioInterruption", (event) => {
-						const activeDeck = activeDeckRef.current === "A" ? deckA : deckB;
-						if (event.type === "began") activeDeck?.pause();
-						else if (event.type === "ended" && event.shouldResume) activeDeck?.play().catch(console.warn);
+						const activeDeck = activeDeckRef.current === "A" ? deckARef.current : deckBRef.current;
+						if (event.type === "began") {
+							wasPlayingBeforeInterruptionRef.current = !!playerStateRef.current.isPlaying;
+							activeDeck?.pause();
+						} else if (event.type === "ended") {
+							if (wasPlayingBeforeInterruptionRef.current && event.shouldResume) activeDeck?.play().catch(console.warn);
+							wasPlayingBeforeInterruptionRef.current = false;
+						}
 					});
 					const routeSub = await AudioBridge.addListener("routeChange", (event) => {
-						if (event.reason === "oldDeviceUnavailable") (activeDeckRef.current === "A" ? deckA : deckB)?.pause();
+						if (event.reason === "oldDeviceUnavailable") (activeDeckRef.current === "A" ? deckARef.current : deckBRef.current)?.pause();
 					});
 					removeNativeListeners = () => {
 						remoteSub.remove?.();
@@ -809,7 +820,7 @@ var MusicProvider = ({ children }) => {
 			}).catch(console.warn);
 		}
 	}, []);
-	const updateMediaSessionPosition = (audio) => {
+	const updateMediaSessionPosition = (audio, forceNative = false) => {
 		if ("mediaSession" in navigator && navigator.mediaSession.setPositionState) {
 			if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration) && audio.duration > 0) try {
 				navigator.mediaSession.setPositionState({
@@ -819,10 +830,16 @@ var MusicProvider = ({ children }) => {
 				});
 			} catch {}
 		}
-		if (isNativePlatform) AudioBridge.updatePlaybackState({
-			currentTime: audio.currentTime,
-			playbackRate: audio.paused ? 0 : audio.playbackRate || 1
-		}).catch(() => {});
+		if (isNativePlatform) {
+			const now = Date.now();
+			if (forceNative || now - lastNativePositionSyncRef.current > 15e3) {
+				lastNativePositionSyncRef.current = now;
+				AudioBridge.updatePlaybackState({
+					currentTime: audio.currentTime,
+					playbackRate: audio.paused ? 0 : audio.playbackRate || 1
+				}).catch(() => {});
+			}
+		}
 	};
 	const preloadQueueTracks = (0, import_react.useCallback)(async (currentIndex, queue) => {
 		if (!queue || queue.length === 0) return;
@@ -1158,7 +1175,7 @@ var MusicProvider = ({ children }) => {
 				currentTime: clamped,
 				isSmartMixBlending: false
 			}));
-			updateMediaSessionPosition(activeDeck);
+			updateMediaSessionPosition(activeDeck, true);
 		}
 	}, []);
 	seekToRef.current = seekTo;
@@ -2463,7 +2480,7 @@ async function downloadAndValidateAudio(url, onProgress) {
 	if (url.startsWith("blob:local/")) {
 		const trackId = url.replace("blob:local/", "");
 		const { getAudioBlob } = await __vitePreload(async () => {
-			const { getAudioBlob } = await import("./db-Cr6tU0Tr.js").then((n) => n.n);
+			const { getAudioBlob } = await import("./db-BcvoMtQu.js").then((n) => n.n);
 			return { getAudioBlob };
 		}, __vite__mapDeps([2,3]));
 		const blob = await getAudioBlob(trackId);
@@ -2926,7 +2943,7 @@ async function retryIndividualTrack(item, settings, onItemUpdate, targetPlaylist
 		await saveTrack(newTrack, blob);
 		if (targetPlaylistId) {
 			const { getAllPlaylists, savePlaylist } = await __vitePreload(async () => {
-				const { getAllPlaylists, savePlaylist } = await import("./db-Cr6tU0Tr.js").then((n) => n.n);
+				const { getAllPlaylists, savePlaylist } = await import("./db-BcvoMtQu.js").then((n) => n.n);
 				return {
 					getAllPlaylists,
 					savePlaylist
@@ -2978,7 +2995,7 @@ async function resolveAndDownloadSingleTrack(meta, settings, onProgress) {
 	if (cached) {
 		const localId = cached.providerTrackId.replace("local_", "");
 		const { getTrack } = await __vitePreload(async () => {
-			const { getTrack } = await import("./db-Cr6tU0Tr.js").then((n) => n.n);
+			const { getTrack } = await import("./db-BcvoMtQu.js").then((n) => n.n);
 			return { getTrack };
 		}, __vite__mapDeps([2,3]));
 		const existingTrack = await getTrack(localId);

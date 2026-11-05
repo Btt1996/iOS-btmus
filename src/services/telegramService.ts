@@ -1,6 +1,7 @@
 import { TelegramSyncItem, Track } from '../types/music';
 import { isTrackInLibrary, saveTrack } from './db';
 import { parseAudioMetadata } from '../utils/id3Parser';
+import { isNativePlatform } from './nativeAudioBridge';
 
 export interface TelegramBotInfo {
   id: number;
@@ -15,24 +16,25 @@ export async function verifyTelegramBot(botToken: string): Promise<TelegramBotIn
     throw new Error('Please enter a valid Telegram Bot Token.');
   }
 
-  // 1. Try server-side proxy first (bypasses any browser CORS or network restrictions)
-  try {
-    const proxyUrl = `/api/telegram/verify?token=${encodeURIComponent(cleanToken)}`;
-    const res = await fetch(proxyUrl);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.ok) return data.result as TelegramBotInfo;
-      throw new Error(data.description || 'Invalid Telegram Bot Token');
-    }
-  } catch (proxyErr: unknown) {
-    // If not a token rejection, try direct
-    const msg = proxyErr instanceof Error ? proxyErr.message : '';
-    if (msg.includes('Invalid') || msg.includes('Unauthorized') || msg.includes('Not Found')) {
-      throw proxyErr;
+  // 1. Try server-side proxy in web mode (bypasses any browser CORS or network restrictions)
+  if (!isNativePlatform) {
+    try {
+      const proxyUrl = `/api/telegram/verify?token=${encodeURIComponent(cleanToken)}`;
+      const res = await fetch(proxyUrl);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok) return data.result as TelegramBotInfo;
+        throw new Error(data.description || 'Invalid Telegram Bot Token');
+      }
+    } catch (proxyErr: unknown) {
+      const msg = proxyErr instanceof Error ? proxyErr.message : '';
+      if (msg.includes('Invalid') || msg.includes('Unauthorized') || msg.includes('Not Found')) {
+        throw proxyErr;
+      }
     }
   }
 
-  // 2. Direct Telegram API fallback
+  // 2. Direct Telegram API fallback (preferred on native iOS via CapacitorHttp)
   const directUrl = `https://api.telegram.org/bot${cleanToken}/getMe`;
   try {
     const res = await fetch(directUrl);
@@ -54,22 +56,28 @@ export async function fetchTelegramAudioTracks(botToken: string): Promise<Telegr
     channel_post?: Record<string, unknown>;
   }> = [];
 
-  // 1. Try server proxy first
-  try {
-    const proxyUrl = `/api/telegram/updates?token=${encodeURIComponent(cleanToken)}&limit=100`;
-    const res = await fetch(proxyUrl);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.ok) {
-        updates = data.result || [];
+  // 1. Try server proxy in web mode
+  if (!isNativePlatform) {
+    try {
+      const proxyUrl = `/api/telegram/updates?token=${encodeURIComponent(cleanToken)}&limit=100`;
+      const res = await fetch(proxyUrl);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok) {
+          updates = data.result || [];
+        } else {
+          throw new Error(data.description || 'Failed to fetch updates from Telegram');
+        }
       } else {
-        throw new Error(data.description || 'Failed to fetch updates from Telegram');
+        throw new Error(`Proxy responded with status ${res.status}`);
       }
-    } else {
-      throw new Error(`Proxy responded with status ${res.status}`);
+    } catch {
+      // Fall through to direct
     }
-  } catch {
-    // 2. Direct fallback
+  }
+
+  // 2. Direct fallback (preferred on native iOS via CapacitorHttp, fallback on web)
+  if (updates.length === 0) {
     const directUrl = `https://api.telegram.org/bot${cleanToken}/getUpdates?limit=100&allowed_updates=["message","channel_post"]`;
     const res = await fetch(directUrl);
     const data = await res.json();
@@ -164,26 +172,28 @@ export async function downloadTelegramAudio(
   // 1. Get File Path
   let filePath = '';
 
-  // Try server proxy for file-info first
-  try {
-    const proxyInfoUrl = `/api/telegram/file-info?token=${encodeURIComponent(cleanToken)}&file_id=${encodeURIComponent(item.fileId)}`;
-    const infoRes = await fetch(proxyInfoUrl);
-    if (infoRes.ok) {
-      const infoData = await infoRes.json();
-      if (infoData.ok && infoData.result?.file_path) {
-        filePath = infoData.result.file_path;
-      } else if (infoData.description) {
-        // e.g. File is too big (> 20MB limit for Telegram bots)
-        throw new Error(infoData.description);
+  // Try server proxy for file-info in web mode
+  if (!isNativePlatform) {
+    try {
+      const proxyInfoUrl = `/api/telegram/file-info?token=${encodeURIComponent(cleanToken)}&file_id=${encodeURIComponent(item.fileId)}`;
+      const infoRes = await fetch(proxyInfoUrl);
+      if (infoRes.ok) {
+        const infoData = await infoRes.json();
+        if (infoData.ok && infoData.result?.file_path) {
+          filePath = infoData.result.file_path;
+        } else if (infoData.description) {
+          // e.g. File is too big (> 20MB limit for Telegram bots)
+          throw new Error(infoData.description);
+        }
       }
-    }
-  } catch (proxyErr) {
-    if (proxyErr instanceof Error && proxyErr.message.includes('too big')) {
-      throw proxyErr;
+    } catch (proxyErr) {
+      if (proxyErr instanceof Error && proxyErr.message.includes('too big')) {
+        throw proxyErr;
+      }
     }
   }
 
-  // Fallback to direct getFile if needed
+  // Fallback to direct getFile if needed (preferred on native iOS)
   if (!filePath) {
     const directInfoUrl = `https://api.telegram.org/bot${cleanToken}/getFile?file_id=${encodeURIComponent(item.fileId)}`;
     const infoRes = await fetch(directInfoUrl);
@@ -195,16 +205,21 @@ export async function downloadTelegramAudio(
   }
 
   // 2. Fetch binary audio stream
-  let res: Response;
-  const proxyDownloadUrl = `/api/telegram/download?token=${encodeURIComponent(cleanToken)}&file_path=${encodeURIComponent(filePath)}`;
+  let res: Response | null = null;
 
-  try {
-    res = await fetch(proxyDownloadUrl);
-    if (!res.ok) {
-      throw new Error(`Proxy error ${res.status}`);
+  if (!isNativePlatform) {
+    const proxyDownloadUrl = `/api/telegram/download?token=${encodeURIComponent(cleanToken)}&file_path=${encodeURIComponent(filePath)}`;
+    try {
+      const proxyRes = await fetch(proxyDownloadUrl);
+      if (proxyRes.ok) {
+        res = proxyRes;
+      }
+    } catch {
+      // Fall through to direct
     }
-  } catch {
-    // If proxy failed, try direct Telegram URL
+  }
+
+  if (!res) {
     const directDownloadUrl = `https://api.telegram.org/file/bot${cleanToken}/${filePath}`;
     res = await fetch(directDownloadUrl);
   }

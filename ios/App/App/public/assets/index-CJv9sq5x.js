@@ -1,12 +1,12 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/SearchScreen-DTBFGsMS.js","assets/rolldown-runtime-DQp2zzRu.js","assets/vendor-icons-DVdP9XFB.js","assets/db-Cr6tU0Tr.js","assets/x2Engine-BSzGwD2O.js","assets/definitions-dS0bAjGV.js","assets/vendor-motion-CvHAzLEi.js","assets/x1Spotify-BF31KyoX.js","assets/TelegramDiscoveryModal-BdEIXZog.js","assets/PlaylistsScreen-CfvwhDU4.js","assets/SyncScreen-BAvYixrj.js","assets/SettingsScreen-BcqyenPO.js","assets/X2BenchmarkModal-bDWlfQ7R.js"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/SearchScreen-DIZcPw1f.js","assets/rolldown-runtime-DQp2zzRu.js","assets/vendor-icons-DVdP9XFB.js","assets/db-BcvoMtQu.js","assets/x2Engine-Cmqm_qoc.js","assets/definitions-dS0bAjGV.js","assets/vendor-motion-CvHAzLEi.js","assets/x1Spotify-DNTjKEdX.js","assets/TelegramDiscoveryModal-CMX1QQ0P.js","assets/PlaylistsScreen-BpXrbmDi.js","assets/SyncScreen-CyGH1N4A.js","assets/SettingsScreen-B5NtonAC.js","assets/X2BenchmarkModal-CBO1aBlH.js"])))=>i.map(i=>d[i]);
 import { a as __toESM, t as __commonJSMin } from "./rolldown-runtime-DQp2zzRu.js";
 import { A as Send, B as Pause, Ct as ArrowUpDown, Dt as require_react, Et as Activity, F as RefreshCw, H as Music, J as ListMusic, K as LoaderCircle, L as Plus, M as RotateCcw, N as Repeat, O as Settings, P as Repeat1, Q as House, R as Play, S as Shuffle, St as Calendar, U as Moon, W as MicVocal, Y as Library, Z as Info, _ as Sparkles, _t as ChevronUp, a as WifiOff, at as ExternalLink, b as SkipForward, bt as Check, d as Trash2, et as Heart, g as SquareCheckBig, gt as CircleAlert, i as Wifi, j as Search, lt as Database, m as Square, mt as CircleCheck, nt as FolderPlus, ot as EllipsisVertical, p as Sun, pt as CirclePlay, q as ListPlus, r as X, s as Volume2, st as Download, t as Zap, tt as HardDrive, u as TriangleAlert, ut as Copy, x as SkipBack, xt as ChartColumn, y as SlidersVertical, yt as ChevronDown } from "./vendor-icons-DVdP9XFB.js";
-import { a as deleteTracks, d as getAudioBlob, g as savePlaylist, m as importLibraryBackup, v as saveTrack } from "./db-Cr6tU0Tr.js";
-import { _ as useMusic, g as MusicProvider, h as parseAudioMetadata, i as retryIndividualTrack, m as formatFileSize, n as executeX2Import, p as formatDuration, t as downloadAndValidateAudio, v as isNativePlatform, y as __vitePreload } from "./x2Engine-BSzGwD2O.js";
+import { a as deleteTracks, d as getAudioBlob, g as savePlaylist, m as importLibraryBackup, v as saveTrack } from "./db-BcvoMtQu.js";
+import { _ as useMusic, g as MusicProvider, h as parseAudioMetadata, i as retryIndividualTrack, m as formatFileSize, n as executeX2Import, p as formatDuration, t as downloadAndValidateAudio, v as isNativePlatform, y as __vitePreload } from "./x2Engine-Cmqm_qoc.js";
 import { a as registerPlugin } from "./definitions-dS0bAjGV.js";
 import { a as PresenceContext, c as LayoutGroupContext, i as isHTMLElement, l as require_jsx_runtime, n as usePresence, o as useIsomorphicLayoutEffect, r as MotionConfigContext, s as useConstant, t as motion } from "./vendor-motion-CvHAzLEi.js";
-import { n as parseSpotifyPlaylistId, t as fetchSpotifyPlaylist } from "./x1Spotify-BF31KyoX.js";
-import { n as SpotDLInfoModal, t as X2BenchmarkModal } from "./X2BenchmarkModal-bDWlfQ7R.js";
+import { n as parseSpotifyPlaylistId, t as fetchSpotifyPlaylist } from "./x1Spotify-DNTjKEdX.js";
+import { n as SpotDLInfoModal, t as X2BenchmarkModal } from "./X2BenchmarkModal-CBO1aBlH.js";
 // \0vite/modulepreload-polyfill.js
 (function polyfill() {
 	const relList = document.createElement("link").relList;
@@ -15825,10 +15825,10 @@ var Animation;
 // node_modules/@capacitor/status-bar/dist/esm/index.js
 var StatusBar = registerPlugin("StatusBar");
 // src/App.tsx
-var SearchScreen = import_react.lazy(() => __vitePreload(() => import("./SearchScreen-DTBFGsMS.js").then((m) => ({ default: m.SearchScreen })), __vite__mapDeps([0,1,2,3,4,5,6,7,8])));
-var PlaylistsScreen = import_react.lazy(() => __vitePreload(() => import("./PlaylistsScreen-CfvwhDU4.js").then((m) => ({ default: m.PlaylistsScreen })), __vite__mapDeps([9,1,2,4,3,5,6])));
-var SyncScreen = import_react.lazy(() => __vitePreload(() => import("./SyncScreen-BAvYixrj.js").then((m) => ({ default: m.SyncScreen })), __vite__mapDeps([10,1,2,3,4,5,6,8,7])));
-var SettingsScreen = import_react.lazy(() => __vitePreload(() => import("./SettingsScreen-BcqyenPO.js").then((m) => ({ default: m.SettingsScreen })), __vite__mapDeps([11,1,2,3,4,5,6,12])));
+var SearchScreen = import_react.lazy(() => __vitePreload(() => import("./SearchScreen-DIZcPw1f.js").then((m) => ({ default: m.SearchScreen })), __vite__mapDeps([0,1,2,3,4,5,6,7,8])));
+var PlaylistsScreen = import_react.lazy(() => __vitePreload(() => import("./PlaylistsScreen-BpXrbmDi.js").then((m) => ({ default: m.PlaylistsScreen })), __vite__mapDeps([9,1,2,4,3,5,6])));
+var SyncScreen = import_react.lazy(() => __vitePreload(() => import("./SyncScreen-CyGH1N4A.js").then((m) => ({ default: m.SyncScreen })), __vite__mapDeps([10,1,2,3,4,5,6,8,7])));
+var SettingsScreen = import_react.lazy(() => __vitePreload(() => import("./SettingsScreen-B5NtonAC.js").then((m) => ({ default: m.SettingsScreen })), __vite__mapDeps([11,1,2,3,4,5,6,12])));
 function ScreenLoadingFallback() {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "flex-1 flex flex-col items-center justify-center p-8 min-h-[50vh] text-center select-none",
